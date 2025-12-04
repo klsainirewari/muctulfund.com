@@ -51,3 +51,43 @@ export const getTopPerformingFunds = async (): Promise<Fund[]> => {
     return FALLBACK_FUNDS;
   }
 };
+
+export const getFinancialAdvice = async (goal: string, risk: string, duration: string): Promise<string> => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return "AI Service is currently offline. Please contact Kanaram Saini directly for advice.";
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `
+      You are an expert Mutual Fund Distributor assistant for Kanaram Saini (ARN-254674).
+      
+      User Profile:
+      - Goal: ${goal}
+      - Risk Appetite: ${risk}
+      - Investment Duration: ${duration}
+
+      Task:
+      Provide a concise investment strategy in 3-4 bullet points.
+      1. Suggest an asset allocation (e.g., 60% Equity, 40% Debt).
+      2. Recommend specific mutual fund CATEGORIES (e.g., Large Cap, Flexi Cap) that fit this risk and duration. Do NOT name specific schemes.
+      3. Provide a brief tip for this specific goal.
+
+      Constraints:
+      - Keep it under 150 words.
+      - Tone: Professional, encouraging, and trustworthy.
+      - MANDATORY DISCLAIMER: End with "Disclaimer: This is AI-generated guidance. Please consult Kanaram Saini for specific scheme recommendations before investing."
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    return response.text || "Unable to generate advice at this time.";
+  } catch (error) {
+    console.error("AI Advice Error:", error);
+    return "We are experiencing high traffic. Please try again later or contact us directly.";
+  }
+};
